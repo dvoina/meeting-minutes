@@ -384,7 +384,13 @@
         if (!group.length) return;
         lines.push(`### ${project.name}`);
         group.forEach((row) => {
-          lines.push(stripMarkdownForEmail(row.markdown));
+          const lastWeek = shiftWeek(week, -7);
+          const lastEntry = findMinutes(person.id, project.id, lastWeek);
+          const currentText = stripMarkdownForEmail(row.markdown) || "-";
+          const lastText = lastEntry ? stripMarkdownForEmail(lastEntry.markdown) : "-";
+          lines.push("| Current week | Last week |");
+          lines.push("| --- | --- |");
+          lines.push(`| ${currentText.replace(/\n/g, "<br>")} | ${lastText.replace(/\n/g, "<br>")} |`);
           lines.push("");
         });
       });
@@ -418,7 +424,20 @@
         if (!group.length) return;
         html.push(`<h4>${escapeHtml(project.name)}</h4>`);
         group.forEach((row) => {
-          html.push(renderMarkdown(row.markdown));
+          const lastWeek = shiftWeek(week, -7);
+          const lastEntry = findMinutes(person.id, project.id, lastWeek);
+          const currentHtml = renderMarkdown(row.markdown) || "<p>-</p>";
+          const lastHtml = lastEntry ? renderMarkdown(lastEntry.markdown) : "<p>-</p>";
+          html.push(
+            `<table class="report-table">
+              <thead>
+                <tr><th>Current week</th><th>Last week</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>${currentHtml}</td><td>${lastHtml}</td></tr>
+              </tbody>
+            </table>`
+          );
         });
       });
     });

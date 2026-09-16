@@ -225,6 +225,29 @@ button:hover {
   margin: 6px 0;
 }
 
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 12px;
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  padding: 8px;
+}
+
+.report-table th {
+  background: #eef4ff;
+}
+
+.report-table td p:first-child,
+.report-table td ul:first-child {
+  margin-top: 0;
+}
+
 .report-render.empty-state {
   color: var(--muted);
 }
