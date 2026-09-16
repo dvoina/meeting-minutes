@@ -61,6 +61,7 @@
     chunks: [],
     isRecording: false,
     isTranscribing: false,
+    startedAtMs: 0,
   };
 
   wireEvents();
@@ -178,7 +179,7 @@
       event.preventDefault();
       await startPushToTalk();
     });
-    ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+    ["pointerup", "pointercancel"].forEach((eventName) => {
       el.pushToTalkButton.addEventListener(eventName, () => {
         stopPushToTalk();
       });
@@ -462,14 +463,16 @@
     try {
       speechState.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       speechState.chunks = [];
-      speechState.mediaRecorder = new MediaRecorder(speechState.stream);
+      const mimeType = getSupportedRecordingMimeType();
+      speechState.mediaRecorder = mimeType ? new MediaRecorder(speechState.stream, { mimeType }) : new MediaRecorder(speechState.stream);
       speechState.mediaRecorder.addEventListener("dataavailable", (event) => {
         if (event.data && event.data.size > 0) {
           speechState.chunks.push(event.data);
         }
       });
       speechState.mediaRecorder.addEventListener("stop", onRecordingStopped);
-      speechState.mediaRecorder.start();
+      speechState.mediaRecorder.start(250);
+      speechState.startedAtMs = Date.now();
       speechState.isRecording = true;
       el.pushToTalkButton.classList.add("recording");
       el.pushToTalkButton.textContent = "Release to stop";
@@ -481,6 +484,7 @@
 
   function stopPushToTalk() {
     if (!speechState.isRecording || !speechState.mediaRecorder) return;
+    speechState.mediaRecorder.requestData();
     speechState.mediaRecorder.stop();
     speechState.isRecording = false;
     el.pushToTalkButton.classList.remove("recording");
@@ -495,10 +499,16 @@
       const mimeType = speechState.mediaRecorder && speechState.mediaRecorder.mimeType
         ? speechState.mediaRecorder.mimeType
         : "audio/webm";
+      const durationMs = Date.now() - speechState.startedAtMs;
+      const totalBytes = speechState.chunks.reduce((sum, chunk) => sum + chunk.size, 0);
+      if (totalBytes === 0 || durationMs < 200) {
+        setSpeechStatus("No audio captured. Hold the button while speaking.");
+        return;
+      }
       const audioBlob = new Blob(speechState.chunks, { type: mimeType });
       const transcript = await transcribeWithMistral(audioBlob, mimeType);
       if (!transcript) {
-        setSpeechStatus("No speech detected.");
+        setSpeechStatus("No speech detected. Try speaking closer to the mic.");
         return;
       }
       insertTranscript(transcript);
@@ -513,6 +523,7 @@
       speechState.mediaRecorder = null;
       speechState.chunks = [];
       speechState.isTranscribing = false;
+      speechState.startedAtMs = 0;
       el.pushToTalkButton.disabled = false;
     }
   }
@@ -538,10 +549,11 @@
     }
 
     const payload = await response.json();
-    if (!payload || typeof payload.text !== "string") {
+    const transcript = getTranscriptFromPayload(payload);
+    if (!transcript) {
       throw new Error("Unexpected response from Mistral transcription API.");
     }
-    return payload.text.trim();
+    return transcript;
   }
 
   function insertTranscript(transcript) {
@@ -559,6 +571,28 @@
 
   function setSpeechStatus(message) {
     el.speechStatus.textContent = message;
+  }
+
+  function getSupportedRecordingMimeType() {
+    if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") {
+      return "";
+    }
+    const candidates = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+    ];
+    const match = candidates.find((mime) => MediaRecorder.isTypeSupported(mime));
+    return match || "";
+  }
+
+  function getTranscriptFromPayload(payload) {
+    if (!payload || typeof payload !== "object") return "";
+    if (typeof payload.text === "string" && payload.text.trim()) return payload.text.trim();
+    if (typeof payload.transcript === "string" && payload.transcript.trim()) return payload.transcript.trim();
+    if (payload.data && typeof payload.data.text === "string" && payload.data.text.trim()) return payload.data.text.trim();
+    return "";
   }
 
   function generateReportText(week) {
