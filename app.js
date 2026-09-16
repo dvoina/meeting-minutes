@@ -551,7 +551,8 @@
     const payload = await response.json();
     const transcript = getTranscriptFromPayload(payload);
     if (!transcript) {
-      throw new Error("Unexpected response from Mistral transcription API.");
+      const payloadHint = compactPayloadHint(payload);
+      throw new Error(`Unexpected response shape from Mistral transcription API: ${payloadHint}`);
     }
     return transcript;
   }
@@ -592,7 +593,40 @@
     if (typeof payload.text === "string" && payload.text.trim()) return payload.text.trim();
     if (typeof payload.transcript === "string" && payload.transcript.trim()) return payload.transcript.trim();
     if (payload.data && typeof payload.data.text === "string" && payload.data.text.trim()) return payload.data.text.trim();
+    if (payload.result && typeof payload.result.text === "string" && payload.result.text.trim()) return payload.result.text.trim();
+    if (typeof payload.output_text === "string" && payload.output_text.trim()) return payload.output_text.trim();
+    if (Array.isArray(payload.outputs)) {
+      const fromOutputs = payload.outputs
+        .map((entry) => (entry && typeof entry.text === "string" ? entry.text.trim() : ""))
+        .filter(Boolean)
+        .join(" ");
+      if (fromOutputs) return fromOutputs;
+    }
+    if (Array.isArray(payload.segments)) {
+      const fromSegments = payload.segments
+        .map((entry) => (entry && typeof entry.text === "string" ? entry.text.trim() : ""))
+        .filter(Boolean)
+        .join(" ");
+      if (fromSegments) return fromSegments;
+    }
+    if (payload.data && Array.isArray(payload.data.segments)) {
+      const fromDataSegments = payload.data.segments
+        .map((entry) => (entry && typeof entry.text === "string" ? entry.text.trim() : ""))
+        .filter(Boolean)
+        .join(" ");
+      if (fromDataSegments) return fromDataSegments;
+    }
     return "";
+  }
+
+  function compactPayloadHint(payload) {
+    try {
+      const asString = JSON.stringify(payload);
+      if (!asString) return "empty payload";
+      return asString.length > 180 ? `${asString.slice(0, 180)}...` : asString;
+    } catch {
+      return "non-serializable payload";
+    }
   }
 
   function generateReportText(week) {
