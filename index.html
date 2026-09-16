@@ -10,6 +10,7 @@
   <header class="topbar">
     <h1>Weekly Meeting Minutes</h1>
     <div class="topbar-actions">
+      <button id="openSettings" class="ghost-btn" type="button">Settings</button>
       <button id="togglePeople" class="ghost-btn" type="button">Hide People</button>
       <button id="toggleProjects" class="ghost-btn" type="button">Hide Projects</button>
     </div>
@@ -61,6 +62,10 @@
 
         <article class="panel">
           <h3>Current Week (edit)</h3>
+          <div id="speechControls" class="speech-controls hidden">
+            <button id="pushToTalkButton" class="speech-btn" type="button">Hold to talk</button>
+            <span id="speechStatus" class="helper-text">Ready</span>
+          </div>
           <textarea id="editor" class="editor" placeholder="Write weekly progress in markdown..."></textarea>
           <h4>Preview</h4>
           <div id="preview" class="markdown-view"></div>
@@ -91,6 +96,22 @@
       </div>
     </aside>
   </main>
+
+  <dialog id="settingsDialog" class="settings-dialog">
+    <form id="settingsForm" method="dialog" class="settings-form">
+      <h3>Settings</h3>
+      <label>
+        Mistral API key
+        <input id="mistralApiKeyInput" type="password" placeholder="Paste API key" autocomplete="off" />
+      </label>
+      <p class="helper-text">Saved locally in this browser and used for push-to-talk transcription.</p>
+      <div class="settings-actions">
+        <button id="clearMistralKey" class="ghost-btn" type="button">Clear key</button>
+        <button id="cancelSettings" class="ghost-btn" type="button">Cancel</button>
+        <button type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="app.js"></script>
 </body>

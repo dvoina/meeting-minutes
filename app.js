@@ -1,5 +1,8 @@
 (function () {
   const STORAGE_KEY = "meeting-minutes-app-v1";
+  const MISTRAL_TRANSCRIPTION_ENDPOINT = "https://api.mistral.ai/v1/audio/transcriptions";
+  const MISTRAL_SPEECH_MODEL = "mixtral-small";
+  const MISTRAL_API_KEY_STORAGE_KEY = "MISTRAL_API_KEY";
 
   const initialState = {
     people: [],
@@ -26,6 +29,15 @@
     weekInput: document.getElementById("weekInput"),
     reportOutput: document.getElementById("reportOutput"),
     mailLink: document.getElementById("mailLink"),
+    openSettings: document.getElementById("openSettings"),
+    settingsDialog: document.getElementById("settingsDialog"),
+    settingsForm: document.getElementById("settingsForm"),
+    mistralApiKeyInput: document.getElementById("mistralApiKeyInput"),
+    clearMistralKey: document.getElementById("clearMistralKey"),
+    cancelSettings: document.getElementById("cancelSettings"),
+    speechControls: document.getElementById("speechControls"),
+    pushToTalkButton: document.getElementById("pushToTalkButton"),
+    speechStatus: document.getElementById("speechStatus"),
     addPersonForm: document.getElementById("addPersonForm"),
     personNameInput: document.getElementById("personNameInput"),
     addProjectForm: document.getElementById("addProjectForm"),
@@ -38,7 +50,18 @@
     projectsSidebar: document.getElementById("projectsSidebar"),
   };
 
+  const speechState = {
+    available: false,
+    apiKey: "",
+    mediaRecorder: null,
+    stream: null,
+    chunks: [],
+    isRecording: false,
+    isTranscribing: false,
+  };
+
   wireEvents();
+  setupSpeechControls();
   seedIfEmpty();
   hydrateUI();
 
@@ -117,6 +140,66 @@
         ? "Show Projects"
         : "Hide Projects";
     });
+
+    el.openSettings.addEventListener("click", () => {
+      openSettingsDialog();
+    });
+
+    el.cancelSettings.addEventListener("click", () => {
+      el.settingsDialog.close();
+    });
+
+    el.clearMistralKey.addEventListener("click", () => {
+      localStorage.removeItem(MISTRAL_API_KEY_STORAGE_KEY);
+      el.mistralApiKeyInput.value = "";
+      setupSpeechControls();
+    });
+
+    el.settingsForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const apiKey = el.mistralApiKeyInput.value.trim();
+      if (apiKey) {
+        localStorage.setItem(MISTRAL_API_KEY_STORAGE_KEY, apiKey);
+      } else {
+        localStorage.removeItem(MISTRAL_API_KEY_STORAGE_KEY);
+      }
+      setupSpeechControls();
+      el.settingsDialog.close();
+    });
+
+    el.pushToTalkButton.addEventListener("pointerdown", async (event) => {
+      event.preventDefault();
+      await startPushToTalk();
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+      el.pushToTalkButton.addEventListener(eventName, () => {
+        stopPushToTalk();
+      });
+    });
+  }
+
+  function setupSpeechControls() {
+    const apiKey = getMistralApiKey();
+    const canRecord =
+      Boolean(apiKey) &&
+      typeof window.MediaRecorder !== "undefined" &&
+      Boolean(navigator.mediaDevices) &&
+      typeof navigator.mediaDevices.getUserMedia === "function";
+
+    speechState.available = canRecord;
+    speechState.apiKey = apiKey;
+    if (!canRecord) {
+      el.speechControls.classList.add("hidden");
+      return;
+    }
+
+    el.speechControls.classList.remove("hidden");
+    setSpeechStatus("Ready to record");
+  }
+
+  function openSettingsDialog() {
+    el.mistralApiKeyInput.value = getMistralApiKey();
+    el.settingsDialog.showModal();
   }
 
   function seedIfEmpty() {
@@ -365,6 +448,110 @@
     });
   }
 
+  async function startPushToTalk() {
+    if (!speechState.available || speechState.isRecording || speechState.isTranscribing) return;
+    try {
+      speechState.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      speechState.chunks = [];
+      speechState.mediaRecorder = new MediaRecorder(speechState.stream);
+      speechState.mediaRecorder.addEventListener("dataavailable", (event) => {
+        if (event.data && event.data.size > 0) {
+          speechState.chunks.push(event.data);
+        }
+      });
+      speechState.mediaRecorder.addEventListener("stop", onRecordingStopped);
+      speechState.mediaRecorder.start();
+      speechState.isRecording = true;
+      el.pushToTalkButton.classList.add("recording");
+      el.pushToTalkButton.textContent = "Release to stop";
+      setSpeechStatus("Recording...");
+    } catch (error) {
+      setSpeechStatus(`Microphone error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
+  function stopPushToTalk() {
+    if (!speechState.isRecording || !speechState.mediaRecorder) return;
+    speechState.mediaRecorder.stop();
+    speechState.isRecording = false;
+    el.pushToTalkButton.classList.remove("recording");
+    el.pushToTalkButton.textContent = "Hold to talk";
+    el.pushToTalkButton.disabled = true;
+    speechState.isTranscribing = true;
+    setSpeechStatus("Transcribing...");
+  }
+
+  async function onRecordingStopped() {
+    try {
+      const mimeType = speechState.mediaRecorder && speechState.mediaRecorder.mimeType
+        ? speechState.mediaRecorder.mimeType
+        : "audio/webm";
+      const audioBlob = new Blob(speechState.chunks, { type: mimeType });
+      const transcript = await transcribeWithMistral(audioBlob, mimeType);
+      if (!transcript) {
+        setSpeechStatus("No speech detected.");
+        return;
+      }
+      insertTranscript(transcript);
+      setSpeechStatus("Transcription added.");
+    } catch (error) {
+      setSpeechStatus(`Transcription failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      if (speechState.stream) {
+        speechState.stream.getTracks().forEach((track) => track.stop());
+      }
+      speechState.stream = null;
+      speechState.mediaRecorder = null;
+      speechState.chunks = [];
+      speechState.isTranscribing = false;
+      el.pushToTalkButton.disabled = false;
+    }
+  }
+
+  async function transcribeWithMistral(audioBlob, mimeType) {
+    const formData = new FormData();
+    const fileExt = mimeType.includes("ogg") ? "ogg" : "webm";
+    const audioFile = new File([audioBlob], `meeting-note.${fileExt}`, { type: mimeType });
+    formData.append("file", audioFile);
+    formData.append("model", MISTRAL_SPEECH_MODEL);
+
+    const response = await fetch(MISTRAL_TRANSCRIPTION_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${speechState.apiKey}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const details = await response.text();
+      throw new Error(`HTTP ${response.status}: ${details || "Request failed"}`);
+    }
+
+    const payload = await response.json();
+    if (!payload || typeof payload.text !== "string") {
+      throw new Error("Unexpected response from Mistral transcription API.");
+    }
+    return payload.text.trim();
+  }
+
+  function insertTranscript(transcript) {
+    const cursorStart = el.editor.selectionStart;
+    const cursorEnd = el.editor.selectionEnd;
+    const current = el.editor.value;
+    const prefix = current && cursorStart > 0 && current[cursorStart - 1] !== "\n" ? "\n" : "";
+    const insertion = `${prefix}${transcript}\n`;
+    el.editor.value = `${current.slice(0, cursorStart)}${insertion}${current.slice(cursorEnd)}`;
+    const nextCursor = cursorStart + insertion.length;
+    el.editor.selectionStart = nextCursor;
+    el.editor.selectionEnd = nextCursor;
+    el.preview.innerHTML = renderMarkdown(el.editor.value);
+  }
+
+  function setSpeechStatus(message) {
+    el.speechStatus.textContent = message;
+  }
+
   function generateReportText(week) {
     const rows = state.minutes.filter((entry) => entry.week === week);
     if (!rows.length) {
@@ -510,6 +697,14 @@
     const container = document.createElement("div");
     container.innerHTML = html;
     return container.innerText.replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  function getMistralApiKey() {
+    const keyFromStorage = localStorage.getItem(MISTRAL_API_KEY_STORAGE_KEY);
+    if (keyFromStorage && keyFromStorage.trim()) {
+      return keyFromStorage.trim();
+    }
+    return "";
   }
 
   function escapeHtml(text) {
