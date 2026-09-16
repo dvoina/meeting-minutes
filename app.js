@@ -65,6 +65,8 @@
     isRecording: false,
     isTranscribing: false,
     startedAtMs: 0,
+    activePointerId: null,
+    stopFallbackTimer: null,
   };
 
   wireEvents();
@@ -183,11 +185,20 @@
     });
 
     el.pushToTalkButton.addEventListener("pointerdown", async (event) => {
+      if (!event.isPrimary) return;
       event.preventDefault();
+      speechState.activePointerId = event.pointerId;
+      try {
+        el.pushToTalkButton.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer capture is best-effort.
+      }
       await startPushToTalk();
     });
-    ["pointerup", "pointercancel"].forEach((eventName) => {
-      el.pushToTalkButton.addEventListener(eventName, () => {
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
+      el.pushToTalkButton.addEventListener(eventName, (event) => {
+        if (speechState.activePointerId !== null && event.pointerId !== speechState.activePointerId) return;
+        speechState.activePointerId = null;
         stopPushToTalk();
       });
     });
@@ -483,6 +494,10 @@
       speechState.mediaRecorder.start(250);
       speechState.startedAtMs = Date.now();
       speechState.isRecording = true;
+      clearSpeechStopTimer();
+      speechState.stopFallbackTimer = setTimeout(() => {
+        stopPushToTalk();
+      }, 30000);
       el.pushToTalkButton.classList.add("recording");
       el.pushToTalkButton.textContent = "Release to stop";
       setSpeechStatus("Recording...");
@@ -493,8 +508,11 @@
 
   function stopPushToTalk() {
     if (!speechState.isRecording || !speechState.mediaRecorder) return;
-    speechState.mediaRecorder.requestData();
-    speechState.mediaRecorder.stop();
+    clearSpeechStopTimer();
+    if (speechState.mediaRecorder.state !== "inactive") {
+      speechState.mediaRecorder.requestData();
+      speechState.mediaRecorder.stop();
+    }
     speechState.isRecording = false;
     el.pushToTalkButton.classList.remove("recording");
     el.pushToTalkButton.textContent = "Hold to talk";
@@ -525,6 +543,7 @@
     } catch (error) {
       setSpeechStatus(formatSpeechError(error));
     } finally {
+      clearSpeechStopTimer();
       if (speechState.stream) {
         speechState.stream.getTracks().forEach((track) => track.stop());
       }
@@ -546,14 +565,17 @@
 
     const response = await fetch(speechState.endpoint, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${speechState.apiKey}`,
-      },
+      headers: buildSpeechHeaders(),
       body: formData,
     });
 
     if (!response.ok) {
       const details = await response.text();
+      if (response.status === 403) {
+        throw new Error(
+          "HTTP 403 from transcription endpoint. Check API key format in Settings (key only, no 'Bearer ' prefix) and Vercel endpoint access."
+        );
+      }
       throw new Error(`HTTP ${response.status}: ${details || "Request failed"}`);
     }
 
@@ -625,6 +647,30 @@
       if (fromDataSegments) return fromDataSegments;
     }
     return "";
+  }
+
+  function clearSpeechStopTimer() {
+    if (speechState.stopFallbackTimer) {
+      clearTimeout(speechState.stopFallbackTimer);
+      speechState.stopFallbackTimer = null;
+    }
+  }
+
+  function buildSpeechHeaders() {
+    const headers = {};
+    const auth = toBearerToken(speechState.apiKey);
+    if (auth) {
+      headers.Authorization = auth;
+    }
+    return headers;
+  }
+
+  function toBearerToken(value) {
+    if (!value || typeof value !== "string") return "";
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (trimmed.toLowerCase().startsWith("bearer ")) return trimmed;
+    return `Bearer ${trimmed}`;
   }
 
 
