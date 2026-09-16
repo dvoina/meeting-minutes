@@ -1,9 +1,10 @@
 (function () {
   const STORAGE_KEY = "meeting-minutes-app-v1";
-  const MISTRAL_TRANSCRIPTION_ENDPOINT = "https://api.mistral.ai/v1/audio/transcriptions";
+  const MISTRAL_TRANSCRIPTION_ENDPOINT = "/api/transcribe";
   const DEFAULT_MISTRAL_SPEECH_MODEL = "voxtral-mini-latest";
   const MISTRAL_API_KEY_STORAGE_KEY = "MISTRAL_API_KEY";
   const MISTRAL_MODEL_STORAGE_KEY = "MISTRAL_SPEECH_MODEL";
+  const MISTRAL_ENDPOINT_STORAGE_KEY = "MISTRAL_TRANSCRIPTION_ENDPOINT";
 
   const initialState = {
     people: [],
@@ -35,6 +36,7 @@
     settingsForm: document.getElementById("settingsForm"),
     mistralApiKeyInput: document.getElementById("mistralApiKeyInput"),
     mistralModelInput: document.getElementById("mistralModelInput"),
+    mistralEndpointInput: document.getElementById("mistralEndpointInput"),
     clearMistralKey: document.getElementById("clearMistralKey"),
     cancelSettings: document.getElementById("cancelSettings"),
     speechControls: document.getElementById("speechControls"),
@@ -56,6 +58,7 @@
     available: false,
     apiKey: "",
     model: DEFAULT_MISTRAL_SPEECH_MODEL,
+    endpoint: MISTRAL_TRANSCRIPTION_ENDPOINT,
     mediaRecorder: null,
     stream: null,
     chunks: [],
@@ -158,6 +161,8 @@
       el.mistralApiKeyInput.value = "";
       localStorage.removeItem(MISTRAL_MODEL_STORAGE_KEY);
       el.mistralModelInput.value = DEFAULT_MISTRAL_SPEECH_MODEL;
+      localStorage.removeItem(MISTRAL_ENDPOINT_STORAGE_KEY);
+      el.mistralEndpointInput.value = MISTRAL_TRANSCRIPTION_ENDPOINT;
       setupSpeechControls();
     });
 
@@ -165,12 +170,14 @@
       event.preventDefault();
       const apiKey = el.mistralApiKeyInput.value.trim();
       const model = el.mistralModelInput.value.trim() || DEFAULT_MISTRAL_SPEECH_MODEL;
+      const endpoint = el.mistralEndpointInput.value.trim() || MISTRAL_TRANSCRIPTION_ENDPOINT;
       if (apiKey) {
         localStorage.setItem(MISTRAL_API_KEY_STORAGE_KEY, apiKey);
       } else {
         localStorage.removeItem(MISTRAL_API_KEY_STORAGE_KEY);
       }
       localStorage.setItem(MISTRAL_MODEL_STORAGE_KEY, model);
+      localStorage.setItem(MISTRAL_ENDPOINT_STORAGE_KEY, endpoint);
       setupSpeechControls();
       el.settingsDialog.close();
     });
@@ -197,6 +204,7 @@
     speechState.available = canRecord;
     speechState.apiKey = apiKey;
     speechState.model = getMistralSpeechModel();
+    speechState.endpoint = getMistralTranscriptionEndpoint();
     if (!canRecord) {
       el.speechControls.classList.add("hidden");
       return;
@@ -209,6 +217,7 @@
   function openSettingsDialog() {
     el.mistralApiKeyInput.value = getMistralApiKey();
     el.mistralModelInput.value = getMistralSpeechModel();
+    el.mistralEndpointInput.value = getMistralTranscriptionEndpoint();
     el.settingsDialog.showModal();
   }
 
@@ -514,7 +523,7 @@
       insertTranscript(transcript);
       setSpeechStatus("Transcription added.");
     } catch (error) {
-      setSpeechStatus(`Transcription failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setSpeechStatus(formatSpeechError(error));
     } finally {
       if (speechState.stream) {
         speechState.stream.getTracks().forEach((track) => track.stop());
@@ -535,7 +544,7 @@
     formData.append("file", audioFile);
     formData.append("model", speechState.model);
 
-    const response = await fetch(MISTRAL_TRANSCRIPTION_ENDPOINT, {
+    const response = await fetch(speechState.endpoint, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${speechState.apiKey}`,
@@ -780,6 +789,24 @@
       return model.trim();
     }
     return DEFAULT_MISTRAL_SPEECH_MODEL;
+  }
+
+  function getMistralTranscriptionEndpoint() {
+    const endpoint = localStorage.getItem(MISTRAL_ENDPOINT_STORAGE_KEY);
+    if (endpoint && endpoint.trim()) {
+      return endpoint.trim();
+    }
+    return MISTRAL_TRANSCRIPTION_ENDPOINT;
+  }
+
+  function formatSpeechError(error) {
+    if (error instanceof TypeError) {
+      return "Transcription failed: network error. Check endpoint in Settings (/api/transcribe by default).";
+    }
+    if (error instanceof Error) {
+      return `Transcription failed: ${error.message}`;
+    }
+    return "Transcription failed: Unknown error";
   }
 
   function escapeHtml(text) {

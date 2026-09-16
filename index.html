@@ -108,7 +108,11 @@
         Speech model
         <input id="mistralModelInput" type="text" placeholder="voxtral-mini-latest" autocomplete="off" />
       </label>
-      <p class="helper-text">Saved locally in this browser and used for push-to-talk transcription.</p>
+      <label>
+        Transcription endpoint (optional proxy)
+        <input id="mistralEndpointInput" type="text" placeholder="/api/transcribe" autocomplete="off" />
+      </label>
+      <p class="helper-text">Saved locally in this browser and used for push-to-talk transcription. Default endpoint uses Vercel API proxy.</p>
       <div class="settings-actions">
         <button id="clearMistralKey" class="ghost-btn" type="button">Clear key</button>
         <button id="cancelSettings" class="ghost-btn" type="button">Cancel</button>
