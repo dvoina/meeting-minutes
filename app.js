@@ -96,11 +96,10 @@
     el.generateButton.addEventListener("click", () => {
       saveCurrentMinutes();
       const reportHtml = generateReportHtml(state.ui.selectedWeek);
-      const reportText = generateReportText(state.ui.selectedWeek);
       el.reportOutput.classList.remove("empty-state");
       el.reportOutput.innerHTML = reportHtml;
       const subject = encodeURIComponent(`Weekly Progress Report - ${state.ui.selectedWeek}`);
-      const body = encodeURIComponent(reportText);
+      const body = encodeURIComponent(htmlToEmailText(reportHtml));
       el.mailLink.href = `mailto:?subject=${subject}&body=${body}`;
       persist();
     });
@@ -505,6 +504,12 @@
       .replace(/\*\*/g, "")
       .replace(/\*/g, "")
       .replace(/`/g, "");
+  }
+
+  function htmlToEmailText(html) {
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    return container.innerText.replace(/\n{3,}/g, "\n\n").trim();
   }
 
   function escapeHtml(text) {
