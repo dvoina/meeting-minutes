@@ -1,8 +1,9 @@
 (function () {
   const STORAGE_KEY = "meeting-minutes-app-v1";
   const MISTRAL_TRANSCRIPTION_ENDPOINT = "https://api.mistral.ai/v1/audio/transcriptions";
-  const MISTRAL_SPEECH_MODEL = "mixtral-small";
+  const DEFAULT_MISTRAL_SPEECH_MODEL = "voxtral-mini-latest";
   const MISTRAL_API_KEY_STORAGE_KEY = "MISTRAL_API_KEY";
+  const MISTRAL_MODEL_STORAGE_KEY = "MISTRAL_SPEECH_MODEL";
 
   const initialState = {
     people: [],
@@ -33,6 +34,7 @@
     settingsDialog: document.getElementById("settingsDialog"),
     settingsForm: document.getElementById("settingsForm"),
     mistralApiKeyInput: document.getElementById("mistralApiKeyInput"),
+    mistralModelInput: document.getElementById("mistralModelInput"),
     clearMistralKey: document.getElementById("clearMistralKey"),
     cancelSettings: document.getElementById("cancelSettings"),
     speechControls: document.getElementById("speechControls"),
@@ -53,6 +55,7 @@
   const speechState = {
     available: false,
     apiKey: "",
+    model: DEFAULT_MISTRAL_SPEECH_MODEL,
     mediaRecorder: null,
     stream: null,
     chunks: [],
@@ -152,17 +155,21 @@
     el.clearMistralKey.addEventListener("click", () => {
       localStorage.removeItem(MISTRAL_API_KEY_STORAGE_KEY);
       el.mistralApiKeyInput.value = "";
+      localStorage.removeItem(MISTRAL_MODEL_STORAGE_KEY);
+      el.mistralModelInput.value = DEFAULT_MISTRAL_SPEECH_MODEL;
       setupSpeechControls();
     });
 
     el.settingsForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const apiKey = el.mistralApiKeyInput.value.trim();
+      const model = el.mistralModelInput.value.trim() || DEFAULT_MISTRAL_SPEECH_MODEL;
       if (apiKey) {
         localStorage.setItem(MISTRAL_API_KEY_STORAGE_KEY, apiKey);
       } else {
         localStorage.removeItem(MISTRAL_API_KEY_STORAGE_KEY);
       }
+      localStorage.setItem(MISTRAL_MODEL_STORAGE_KEY, model);
       setupSpeechControls();
       el.settingsDialog.close();
     });
@@ -188,17 +195,19 @@
 
     speechState.available = canRecord;
     speechState.apiKey = apiKey;
+    speechState.model = getMistralSpeechModel();
     if (!canRecord) {
       el.speechControls.classList.add("hidden");
       return;
     }
 
     el.speechControls.classList.remove("hidden");
-    setSpeechStatus("Ready to record");
+    setSpeechStatus(`Ready to record (${speechState.model})`);
   }
 
   function openSettingsDialog() {
     el.mistralApiKeyInput.value = getMistralApiKey();
+    el.mistralModelInput.value = getMistralSpeechModel();
     el.settingsDialog.showModal();
   }
 
@@ -513,7 +522,7 @@
     const fileExt = mimeType.includes("ogg") ? "ogg" : "webm";
     const audioFile = new File([audioBlob], `meeting-note.${fileExt}`, { type: mimeType });
     formData.append("file", audioFile);
-    formData.append("model", MISTRAL_SPEECH_MODEL);
+    formData.append("model", speechState.model);
 
     const response = await fetch(MISTRAL_TRANSCRIPTION_ENDPOINT, {
       method: "POST",
@@ -705,6 +714,14 @@
       return keyFromStorage.trim();
     }
     return "";
+  }
+
+  function getMistralSpeechModel() {
+    const model = localStorage.getItem(MISTRAL_MODEL_STORAGE_KEY);
+    if (model && model.trim()) {
+      return model.trim();
+    }
+    return DEFAULT_MISTRAL_SPEECH_MODEL;
   }
 
   function escapeHtml(text) {
