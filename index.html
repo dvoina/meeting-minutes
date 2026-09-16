@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meeting Minutes</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Weekly Meeting Minutes</h1>
+    <div class="topbar-actions">
+      <button id="togglePeople" class="ghost-btn" type="button">Hide People</button>
+      <button id="toggleProjects" class="ghost-btn" type="button">Hide Projects</button>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <aside id="peopleSidebar" class="sidebar left">
+      <div class="panel">
+        <h2>People</h2>
+        <ul id="peopleList" class="item-list"></ul>
+        <form id="addPersonForm" class="inline-form">
+          <input id="personNameInput" type="text" placeholder="New person name" required />
+          <button type="submit">Add</button>
+        </form>
+      </div>
+    </aside>
+
+    <section class="center">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <label>
+              Person
+              <select id="personSelect"></select>
+            </label>
+            <label>
+              Project
+              <select id="projectSelect">
+                <option value="">General update</option>
+              </select>
+            </label>
+            <label>
+              Week of
+              <input id="weekInput" type="date" />
+            </label>
+          </div>
+          <div class="toolbar-group">
+            <button id="saveButton" type="button">Save Minutes</button>
+            <button id="generateButton" type="button">Generate Report</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="editor-grid">
+        <article class="panel">
+          <h3>Last Week (reference)</h3>
+          <div id="lastWeekView" class="markdown-view empty-state">No minutes from last week.</div>
+        </article>
+
+        <article class="panel">
+          <h3>Current Week (edit)</h3>
+          <textarea id="editor" class="editor" placeholder="Write weekly progress in markdown..."></textarea>
+          <h4>Preview</h4>
+          <div id="preview" class="markdown-view"></div>
+        </article>
+      </div>
+
+      <article class="panel">
+        <h3>Generated Progress Report</h3>
+        <div id="reportOutput" class="report-render empty-state">Click "Generate Report" to build a mail-ready summary.</div>
+        <a id="mailLink" class="mail-link" href="#" target="_blank" rel="noreferrer noopener">Open in email draft</a>
+      </article>
+    </section>
+
+    <aside id="projectsSidebar" class="sidebar right">
+      <div class="panel">
+        <h2>Projects</h2>
+        <ul id="projectList" class="item-list"></ul>
+        <form id="addProjectForm" class="inline-form">
+          <input id="projectNameInput" type="text" placeholder="New project name" required />
+          <button type="submit">Add</button>
+        </form>
+
+        <hr />
+
+        <h3>Assignments</h3>
+        <p class="helper-text">Select a person, then tick assigned projects.</p>
+        <div id="assignmentBox" class="assignment-box"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
