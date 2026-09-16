@@ -551,8 +551,7 @@
     const payload = await response.json();
     const transcript = getTranscriptFromPayload(payload);
     if (!transcript) {
-      const payloadHint = compactPayloadHint(payload);
-      throw new Error(`Unexpected response shape from Mistral transcription API: ${payloadHint}`);
+      return "";
     }
     return transcript;
   }
@@ -619,15 +618,6 @@
     return "";
   }
 
-  function compactPayloadHint(payload) {
-    try {
-      const asString = JSON.stringify(payload);
-      if (!asString) return "empty payload";
-      return asString.length > 180 ? `${asString.slice(0, 180)}...` : asString;
-    } catch {
-      return "non-serializable payload";
-    }
-  }
 
   function generateReportText(week) {
     const rows = state.minutes.filter((entry) => entry.week === week);
