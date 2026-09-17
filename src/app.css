@@ -1,4 +1,12 @@
 :root {
+  --pico-font-size: 92.5%;
+  --pico-line-height: 1.45;
+  --pico-spacing: 0.875rem;
+  --pico-form-element-spacing-vertical: 0.5rem;
+  --pico-form-element-spacing-horizontal: 0.625rem;
+  --pico-nav-element-spacing-vertical: 0.4rem;
+  --pico-nav-element-spacing-horizontal: 0.6rem;
+  --pico-border-radius: 0.6rem;
   --app-bg: #f3f5f9;
   --app-surface: #fff;
   --app-text: #1f2937;
@@ -18,17 +26,17 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
   background: var(--app-surface);
   border-bottom: 1px solid var(--app-border);
 }
 
 .app-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
 .topbar-actions {
@@ -43,8 +51,8 @@ body {
 
 .app-layout {
   display: grid;
-  grid-template-columns: 260px minmax(460px, 1fr) 260px;
-  gap: 0.75rem;
+  grid-template-columns: 230px minmax(420px, 1fr) 230px;
+  gap: 0.6rem;
   align-items: start;
 }
 
@@ -55,15 +63,15 @@ body {
 .center {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .panel {
   margin: 0;
   border: 1px solid var(--app-border);
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
   background: var(--app-surface);
-  padding: 0.9rem;
+  padding: 0.7rem;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
@@ -75,21 +83,21 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 .toolbar-group {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 .toolbar-group label {
   margin: 0;
-  min-width: 10rem;
+  min-width: 9rem;
   color: var(--app-muted);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
 }
 
 .toolbar-group button {
@@ -99,19 +107,19 @@ body {
 .editor-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .editor {
-  min-height: 240px;
+  min-height: 210px;
   margin: 0;
 }
 
 .speech-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
 }
 
 .speech-btn.recording {
@@ -123,15 +131,15 @@ body {
 .markdown-view,
 .report-render {
   border: 1px solid var(--app-border);
-  border-radius: 0.75rem;
-  padding: 0.75rem;
-  min-height: 220px;
+  border-radius: 0.6rem;
+  padding: 0.6rem;
+  min-height: 190px;
   background: #fbfcff;
   overflow-wrap: anywhere;
 }
 
 .report-render {
-  min-height: 180px;
+  min-height: 160px;
 }
 
 .markdown-view.empty-state,
@@ -145,17 +153,17 @@ body {
 
 .item-list {
   list-style: none;
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.6rem;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .item-list li {
   border: 1px solid var(--app-border);
-  border-radius: 0.75rem;
-  padding: 0.5rem 0.625rem;
+  border-radius: 0.6rem;
+  padding: 0.42rem 0.55rem;
   cursor: pointer;
   background: #fff;
 }
@@ -196,7 +204,7 @@ body {
 
 .item-actions {
   display: flex;
-  gap: 0.375rem;
+  gap: 0.3rem;
 }
 
 .item-actions button {
@@ -204,8 +212,8 @@ body {
 }
 
 .icon-btn {
-  min-width: 2rem;
-  height: 2rem;
+  min-width: 1.8rem;
+  height: 1.8rem;
   line-height: 1;
   padding: 0.25rem 0.4rem;
   font-size: 0.95rem;
@@ -213,7 +221,7 @@ body {
 
 .inline-form {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   align-items: center;
   margin-bottom: 0;
 }
@@ -227,9 +235,9 @@ body {
 }
 
 .helper-text {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.4rem;
   color: var(--app-muted);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .assignment-box {
@@ -239,13 +247,13 @@ body {
 }
 
 .mail-link {
-  margin-top: 0.75rem;
+  margin-top: 0.6rem;
   display: inline-block;
 }
 
 .settings-dialog {
   border: 1px solid var(--app-border);
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
   width: min(520px, calc(100vw - 24px));
 }
 
@@ -264,7 +272,7 @@ body {
 .settings-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
@@ -275,7 +283,7 @@ body {
 .report-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 0.5rem 0 0.75rem;
+  margin: 0.4rem 0 0.6rem;
 }
 
 .report-table th,
@@ -283,11 +291,31 @@ body {
   border: 1px solid var(--app-border);
   text-align: left;
   vertical-align: top;
-  padding: 0.5rem;
+  padding: 0.42rem;
 }
 
 .report-table th {
   background: #eef4ff;
+  font-size: 0.82rem;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin-bottom: 0.55rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+h4 {
+  font-size: 0.93rem;
 }
 
 .report-table td p:first-child,
@@ -297,7 +325,7 @@ body {
 
 @media (max-width: 1120px) {
   .app-layout {
-    grid-template-columns: minmax(220px, 260px) 1fr;
+    grid-template-columns: minmax(200px, 230px) 1fr;
   }
 
   .sidebar.right {
