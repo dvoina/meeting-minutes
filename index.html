@@ -4,19 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meeting Minutes</title>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+  />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>Weekly Meeting Minutes</h1>
-    <div class="topbar-actions">
-      <button id="openSettings" class="ghost-btn" type="button">Settings</button>
-      <button id="togglePeople" class="ghost-btn" type="button">Hide People</button>
-      <button id="toggleProjects" class="ghost-btn" type="button">Hide Projects</button>
-    </div>
+  <header class="container-fluid topbar">
+    <h1 class="app-title">Weekly Meeting Minutes</h1>
+    <nav class="topbar-actions">
+      <button id="openSettings" class="secondary outline" type="button">Settings</button>
+      <button id="togglePeople" class="secondary outline" type="button">Hide People</button>
+      <button id="toggleProjects" class="secondary outline" type="button">Hide Projects</button>
+    </nav>
   </header>
 
-  <main class="app-layout">
+  <main class="container-fluid app-layout">
     <aside id="peopleSidebar" class="sidebar left">
       <div class="panel">
         <h2>People</h2>
@@ -63,7 +67,7 @@
         <article class="panel">
           <h3>Current Week (edit)</h3>
           <div id="speechControls" class="speech-controls hidden">
-            <button id="pushToTalkButton" class="speech-btn" type="button">Hold to talk</button>
+            <button id="pushToTalkButton" class="speech-btn secondary" type="button">Hold to talk</button>
             <span id="speechStatus" class="helper-text">Ready</span>
           </div>
           <textarea id="editor" class="editor" placeholder="Write weekly progress in markdown..."></textarea>
@@ -114,8 +118,8 @@
       </label>
       <p class="helper-text">Saved locally in this browser and used for push-to-talk transcription. Default endpoint uses Vercel API proxy.</p>
       <div class="settings-actions">
-        <button id="clearMistralKey" class="ghost-btn" type="button">Clear key</button>
-        <button id="cancelSettings" class="ghost-btn" type="button">Cancel</button>
+        <button id="clearMistralKey" class="secondary outline" type="button">Clear key</button>
+        <button id="cancelSettings" class="secondary outline" type="button">Cancel</button>
         <button type="submit">Save</button>
       </div>
     </form>

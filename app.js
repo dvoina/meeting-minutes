@@ -111,10 +111,12 @@
       persistAndRender();
     });
 
-    el.weekInput.addEventListener("change", () => {
-      state.ui.selectedWeek = el.weekInput.value || mondayOf(new Date());
+    const onWeekInputChanged = () => {
+      state.ui.selectedWeek = normalizeWeekString(el.weekInput.value);
       persistAndRender();
-    });
+    };
+    el.weekInput.addEventListener("change", onWeekInputChanged);
+    el.weekInput.addEventListener("input", onWeekInputChanged);
 
     el.editor.addEventListener("input", () => {
       el.preview.innerHTML = renderMarkdown(el.editor.value);
@@ -871,31 +873,121 @@
     if (!raw) return structuredClone(initialState);
     try {
       const parsed = JSON.parse(raw);
-      return {
+      const merged = {
         ...structuredClone(initialState),
         ...parsed,
         ui: { ...initialState.ui, ...(parsed.ui || {}) },
       };
+      return normalizeLoadedState(merged);
     } catch {
       return structuredClone(initialState);
     }
+  }
+
+  function normalizeLoadedState(candidate) {
+    const safePeople = Array.isArray(candidate.people) ? candidate.people : [];
+    const safeProjects = Array.isArray(candidate.projects) ? candidate.projects : [];
+    const safeMinutes = Array.isArray(candidate.minutes) ? candidate.minutes : [];
+    return {
+      ...candidate,
+      people: safePeople,
+      projects: safeProjects,
+      minutes: normalizeMinutes(safeMinutes),
+      ui: {
+        ...initialState.ui,
+        ...(candidate.ui || {}),
+        selectedWeek: normalizeWeekString(candidate.ui && candidate.ui.selectedWeek),
+      },
+    };
+  }
+
+  function normalizeMinutes(minutes) {
+    const latestByKey = new Map();
+    minutes.forEach((entry) => {
+      if (!entry || typeof entry !== "object") return;
+      if (typeof entry.personId !== "string" || !entry.personId) return;
+      const projectId = typeof entry.projectId === "string" ? entry.projectId : "";
+      const week = normalizeWeekString(entry.week);
+      const normalized = {
+        ...entry,
+        projectId,
+        week,
+      };
+      const key = `${entry.personId}::${projectId}::${week}`;
+      const existing = latestByKey.get(key);
+      if (!existing || isNewerEntry(normalized, existing)) {
+        latestByKey.set(key, normalized);
+      }
+    });
+    return Array.from(latestByKey.values());
+  }
+
+  function isNewerEntry(left, right) {
+    const leftTs = Date.parse(left.updatedAt || "");
+    const rightTs = Date.parse(right.updatedAt || "");
+    if (Number.isNaN(leftTs) && Number.isNaN(rightTs)) return true;
+    if (Number.isNaN(leftTs)) return false;
+    if (Number.isNaN(rightTs)) return true;
+    return leftTs >= rightTs;
   }
 
   function uid(prefix) {
     return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
-  function mondayOf(date) {
-    const d = new Date(date);
-    const day = d.getDay() || 7;
-    d.setDate(d.getDate() - day + 1);
-    return d.toISOString().slice(0, 10);
+  function mondayOf(value) {
+    const d = toUtcDay(value) || toUtcDay(new Date());
+    const day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() - day + 1);
+    return formatIsoDate(d);
   }
 
   function shiftWeek(yyyyMmDd, deltaDays) {
-    const d = new Date(`${yyyyMmDd}T00:00:00`);
-    d.setDate(d.getDate() + deltaDays);
-    return d.toISOString().slice(0, 10);
+    const d = parseIsoDate(yyyyMmDd);
+    if (!d) return mondayOf(new Date());
+    d.setUTCDate(d.getUTCDate() + deltaDays);
+    return formatIsoDate(d);
+  }
+
+  function normalizeWeekString(value) {
+    const parsed = parseIsoDate(value);
+    if (!parsed) return mondayOf(new Date());
+    return mondayOf(parsed);
+  }
+
+  function toUtcDay(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
+    }
+    if (typeof value === "string") {
+      return parseIsoDate(value);
+    }
+    return null;
+  }
+
+  function parseIsoDate(value) {
+    if (typeof value !== "string") return null;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+    if (!match) return null;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+    if (
+      parsed.getUTCFullYear() !== year ||
+      parsed.getUTCMonth() !== month - 1 ||
+      parsed.getUTCDate() !== day
+    ) {
+      return null;
+    }
+    return parsed;
+  }
+
+  function formatIsoDate(date) {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   function ensureValidSelection() {
