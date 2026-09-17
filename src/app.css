@@ -1,10 +1,17 @@
 :root {
-  --pico-font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
-  --pico-border-radius: 0.75rem;
+  --app-bg: #f3f5f9;
+  --app-surface: #fff;
+  --app-text: #1f2937;
+  --app-muted: #6b7280;
+  --app-border: #d9dee8;
+  --app-primary: #2563eb;
 }
 
 body {
+  margin: 0;
   min-height: 100vh;
+  background: var(--app-bg);
+  color: var(--app-text);
 }
 
 .topbar {
@@ -13,7 +20,10 @@ body {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
-  border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .app-title {
@@ -38,7 +48,7 @@ body {
   align-items: start;
 }
 
-.sidebar.collapsed {
+.sidebar.hidden {
   display: none;
 }
 
@@ -50,6 +60,11 @@ body {
 
 .panel {
   margin: 0;
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+  padding: 0.9rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 .panel > :first-child {
@@ -73,6 +88,8 @@ body {
 .toolbar-group label {
   margin: 0;
   min-width: 10rem;
+  color: var(--app-muted);
+  font-size: 0.9rem;
 }
 
 .toolbar-group button {
@@ -97,26 +114,19 @@ body {
   margin-bottom: 0.5rem;
 }
 
-.speech-controls.hidden {
-  display: none;
-}
-
-.speech-btn {
-  margin: 0;
-}
-
 .speech-btn.recording {
-  --pico-color: #fff;
-  --pico-background-color: #c52828;
-  --pico-border-color: #c52828;
+  color: #fff;
+  background: #c52828;
+  border-color: #c52828;
 }
 
 .markdown-view,
 .report-render {
-  border: 1px solid var(--pico-muted-border-color);
-  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
   padding: 0.75rem;
   min-height: 220px;
+  background: #fbfcff;
   overflow-wrap: anywhere;
 }
 
@@ -126,7 +136,7 @@ body {
 
 .markdown-view.empty-state,
 .report-render.empty-state {
-  color: var(--pico-muted-color);
+  color: var(--app-muted);
 }
 
 .markdown-view p {
@@ -143,15 +153,16 @@ body {
 }
 
 .item-list li {
-  border: 1px solid var(--pico-muted-border-color);
-  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
   padding: 0.5rem 0.625rem;
   cursor: pointer;
+  background: #fff;
 }
 
 .item-list li.active {
-  border-color: var(--pico-primary);
-  background: color-mix(in srgb, var(--pico-primary) 10%, transparent);
+  border-color: var(--app-primary);
+  background: #eef4ff;
 }
 
 .item-row {
@@ -166,6 +177,21 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.item-select-btn {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
 }
 
 .item-actions {
@@ -202,7 +228,7 @@ body {
 
 .helper-text {
   margin: 0 0 0.5rem;
-  color: var(--pico-muted-color);
+  color: var(--app-muted);
   font-size: 0.875rem;
 }
 
@@ -218,8 +244,8 @@ body {
 }
 
 .settings-dialog {
-  border: 1px solid var(--pico-muted-border-color);
-  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
   width: min(520px, calc(100vw - 24px));
 }
 
@@ -254,10 +280,14 @@ body {
 
 .report-table th,
 .report-table td {
-  border: 1px solid var(--pico-muted-border-color);
+  border: 1px solid var(--app-border);
   text-align: left;
   vertical-align: top;
   padding: 0.5rem;
+}
+
+.report-table th {
+  background: #eef4ff;
 }
 
 .report-table td p:first-child,
